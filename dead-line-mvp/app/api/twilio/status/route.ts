@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   const duration = String(form.get('CallDuration') || '');
 
   if (callId) {
-    await db().ref(`calls/${callId}`).update({
+    await db.ref(`calls/${callId}`).update({
       status: callStatus,
       twilioSid: callSid,
       duration,

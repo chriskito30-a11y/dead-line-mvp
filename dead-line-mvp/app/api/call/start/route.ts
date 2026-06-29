@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     if (!message) throw new Error('Message vocal manquant');
 
     const createdAt = Date.now();
-    const callRef = db().ref('calls').push();
+    const callRef = db.ref('calls').push();
     const callId = callRef.key;
     if (!callId) throw new Error('Impossible de créer le callId');
 

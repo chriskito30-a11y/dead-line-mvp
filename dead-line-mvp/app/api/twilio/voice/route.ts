@@ -18,11 +18,11 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const snap = await db().ref(`calls/${callId}`).get();
+  const snap = await db.ref(`calls/${callId}`).get();
   const data = snap.val();
   const message = data?.message || 'Le message est introuvable.';
 
-  await db().ref(`calls/${callId}`).update({ status: 'answered_or_voice_requested', voiceRequestedAt: Date.now() });
+  await db.ref(`calls/${callId}`).update({ status: 'answered_or_voice_requested', voiceRequestedAt: Date.now() });
 
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
