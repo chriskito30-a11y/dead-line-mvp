@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebaseAdmin';
 import { requireAdminKey } from '@/lib/security';
-import { twilioClient, twilioFromNumber } from '@/lib/twilio';
+import { twilioClient } from '@/lib/twilio';
 
 function normalizePhone(phone: string) {
   const cleaned = phone.trim().replace(/\s+/g, '');
@@ -11,6 +11,9 @@ function normalizePhone(phone: string) {
 }
 
 export async function POST(req: NextRequest) {
+  let callRef: any = null;
+  let callId: string | null = null;
+
   try {
     requireAdminKey(req);
 
@@ -23,9 +26,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Numéro invalide' }, { status: 400 });
     }
 
-    const createdAt = Date.now();
-    const callRef = db.ref('calls').push();
-    const callId = callRef.key;
+    callRef = db.ref('calls').push();
+    callId = callRef.key;
 
     if (!callId) {
       throw new Error('Impossible de créer le callId');
@@ -36,10 +38,12 @@ export async function POST(req: NextRequest) {
       label,
       message,
       status: 'creating',
-      createdAt
+      createdAt: Date.now()
     });
 
-    if (!twilioFromNumber()) {
+    const fromNumber = process.env.TWILIO_PHONE_NUMBER || '';
+
+    if (!fromNumber) {
       await callRef.update({
         status: 'simulation',
         simulated: true,
@@ -55,7 +59,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const client = twilioClient();
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
 
     if (!baseUrl) {
@@ -68,9 +71,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'NEXT_PUBLIC_APP_URL manquant' }, { status: 500 });
     }
 
+    const client = twilioClient();
+
     const call = await client.calls.create({
       to: phone,
-      from: twilioFromNumber(),
+      from: fromNumber,
       url: `${baseUrl}/api/twilio/voice?callId=${callId}`,
       statusCallback: `${baseUrl}/api/twilio/status?callId=${callId}`,
       statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed']
@@ -84,8 +89,17 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, callId, twilioSid: call.sid });
   } catch (error: any) {
+    if (callRef) {
+      await callRef.update({
+        status: 'error',
+        error: error?.message || 'Erreur inconnue',
+        updatedAt: Date.now()
+      });
+    }
+
     return NextResponse.json({
       ok: false,
+      callId,
       error: error?.message || 'Erreur inconnue'
     }, { status: 500 });
   }
