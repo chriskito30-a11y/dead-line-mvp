@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       createdAt
     });
 
-    if (!twilioFromNumber) {
+    if (!twilioFromNumber()) {
       await callRef.update({
         status: 'simulation',
         simulated: true,
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
 
     const call = await client.calls.create({
       to: phone,
-      from: twilioFromNumber,
+      from: twilioFromNumber(),
       url: `${baseUrl}/api/twilio/voice?callId=${callId}`,
       statusCallback: `${baseUrl}/api/twilio/status?callId=${callId}`,
       statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed']
