@@ -1,24 +1,24 @@
-import admin from 'firebase-admin';
+import { cert, getApps, initializeApp } from 'firebase-admin/app';
+import { getDatabase } from 'firebase-admin/database';
 
-function getPrivateKey(): string {
+function privateKey() {
   const key = process.env.FIREBASE_PRIVATE_KEY;
-  if (!key) throw new Error('FIREBASE_PRIVATE_KEY manquant');
+  if (!key) throw new Error('Missing FIREBASE_PRIVATE_KEY');
   return key.replace(/\\n/g, '\n');
 }
 
 export function getFirebaseAdminApp() {
-  if (admin.apps.length) return admin.app();
+  const apps = getApps();
+  if (apps.length) return apps[0];
 
-  return admin.initializeApp({
-    credential: admin.credential.cert({
+  return initializeApp({
+    credential: cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: getPrivateKey(),
+      privateKey: privateKey()
     }),
-    databaseURL: process.env.FIREBASE_DATABASE_URL,
+    databaseURL: process.env.FIREBASE_DATABASE_URL
   });
 }
 
-export function db() {
-  return getFirebaseAdminApp().database();
-}
+export const db = getDatabase(getFirebaseAdminApp());
