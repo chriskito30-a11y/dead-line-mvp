@@ -13,13 +13,25 @@ function normalizeValue(value: unknown) {
   if (value === null || value === undefined) return '';
   if (typeof value === 'string') return value.trim();
   if (typeof value === 'number' || typeof value === 'boolean') return String(value).trim();
-  return JSON.stringify(value).trim();
+  return '';
+}
+
+function normalizeDebugValue(value: unknown) {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value).trim();
+  try {
+    return JSON.stringify(value).slice(0, 500);
+  } catch {
+    return '';
+  }
 }
 
 function extractAuto(parsed: any) {
   if (!parsed || typeof parsed !== 'object') return '';
 
   const candidates = [
+    // MysterSmith et APIs texte classiques
     parsed.text,
     parsed.value,
     parsed.last,
@@ -27,10 +39,28 @@ function extractAuto(parsed: any) {
     parsed.prediction,
     parsed.phone,
     parsed.message,
+
+    // Impression élégante / APIs structurées similaires
+    parsed.globalStep,
+    parsed.currentStep,
+    parsed.highlightedText,
+    parsed.outputWords,
+    parsed.wordToNumber,
+    parsed.anagramResult,
+    parsed.song && parsed.artist ? `${parsed.song}, ${parsed.artist}` : '',
+    parsed.song,
+    parsed.artist,
+
+    // Objets imbriqués fréquents
     parsed.data?.text,
     parsed.data?.value,
     parsed.data?.prediction,
     parsed.data?.phone,
+    parsed.data?.message,
+    parsed.data?.globalStep,
+    parsed.result?.text,
+    parsed.result?.value,
+    parsed.result?.prediction,
   ];
 
   for (const candidate of candidates) {
@@ -108,12 +138,14 @@ export async function POST(req: NextRequest) {
     }
 
     let value = '';
+    const selectedPath = jsonPath || 'text';
+
     if (responseMode === 'text' || !parsed) {
       value = rawText.trim();
     } else if (responseMode === 'json') {
-      value = normalizeValue(getByPath(parsed, jsonPath || 'text'));
+      value = normalizeValue(getByPath(parsed, selectedPath));
     } else {
-      value = normalizeValue(getByPath(parsed, jsonPath || 'text')) || extractAuto(parsed) || rawText.trim();
+      value = normalizeValue(getByPath(parsed, selectedPath)) || extractAuto(parsed);
     }
 
     if (parsed && Object.prototype.hasOwnProperty.call(parsed, 'found') && Number(parsed.found) === 0) {
@@ -121,7 +153,13 @@ export async function POST(req: NextRequest) {
     }
 
     if (!value) {
-      return NextResponse.json({ ok: false, error: 'La valeur récupérée est vide.' }, { status: 422 });
+      return NextResponse.json({
+        ok: false,
+        error: parsed
+          ? `Aucune valeur lisible. Indique le bon champ JSON, par exemple text, globalStep, song, artist ou lyrics.`
+          : 'La valeur récupérée est vide.',
+        availableFields: parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? Object.keys(parsed).slice(0, 30) : [],
+      }, { status: 422 });
     }
 
     return NextResponse.json({
@@ -130,6 +168,8 @@ export async function POST(req: NextRequest) {
       rawType: parsed?.type ? String(parsed.type) : '',
       found: parsed?.found ?? null,
       mode: parsed ? 'json' : 'text',
+      selectedPath,
+      debugPreview: normalizeDebugValue(value),
       readAt: Date.now(),
     });
   } catch (error: any) {

@@ -597,6 +597,25 @@ button:disabled {
   accent-color: var(--gold);
 }
 
+
+.json-path-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 4px;
+}
+
+.field-help {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.field-help strong {
+  color: #fff2cf;
+}
+
 .api-actions {
   display: flex;
   gap: 10px;

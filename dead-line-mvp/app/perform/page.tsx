@@ -51,6 +51,7 @@ type CallResult = {
 };
 
 const STORAGE_KEY = 'deadline_perform_settings_v1';
+const JSON_PATH_PRESETS = ['text', 'globalStep', 'song', 'artist', 'lyrics', 'value', 'last', 'message'];
 
 const blankVariables: VariablesState = {
   prediction: '',
@@ -77,6 +78,12 @@ function formatTime(timestamp?: number) {
 
 function targetLabel(target: string) {
   return DEADLINE_API_TARGETS.find((item) => item.id === target)?.label || target;
+}
+
+function shortValue(value?: string, maxLength = 180) {
+  const text = String(value || '').trim();
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength)}…`;
 }
 
 function buildDefaultSource(): ApiSource {
@@ -527,9 +534,18 @@ export default function PerformPage() {
                     </div>
                     <div>
                       <label>Champ JSON</label>
-                      <input value={source.jsonPath} onChange={(event) => updateSource(source.id, { jsonPath: event.target.value })} placeholder="text" />
+                      <input value={source.jsonPath} onChange={(event) => updateSource(source.id, { jsonPath: event.target.value })} placeholder="text, globalStep, result.value…" />
                     </div>
                   </div>
+
+                  <div className="json-path-presets" aria-label="Raccourcis de champs JSON">
+                    {JSON_PATH_PRESETS.map((path) => (
+                      <button key={path} type="button" className="ghost-button token-button" onClick={() => updateSource(source.id, { responseMode: 'json', jsonPath: path })}>
+                        {path}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="field-help">Pour Impression élégante, utilise généralement <strong>globalStep</strong>. Pour MysterSmith, utilise généralement <strong>text</strong>.</p>
 
                   <label>Remplir</label>
                   <select value={source.target} onChange={(event) => updateSource(source.id, { target: event.target.value as DeadlineApiTarget })}>
@@ -545,7 +561,7 @@ export default function PerformPage() {
                     <button className="ghost-button" onClick={() => removeSource(source.id)}>Supprimer</button>
                   </div>
 
-                  {source.lastValue && <p className="api-note success-text">Dernière valeur → {targetLabel(source.target)} : <strong>{source.lastValue}</strong>{source.rawType ? ` · ${source.rawType}` : ''}{source.lastReadAt ? ` · ${formatTime(source.lastReadAt)}` : ''}</p>}
+                  {source.lastValue && <p className="api-note success-text">Dernière valeur → {targetLabel(source.target)} : <strong title={source.lastValue}>{shortValue(source.lastValue)}</strong>{source.rawType ? ` · ${source.rawType}` : ''}{source.lastReadAt ? ` · ${formatTime(source.lastReadAt)}` : ''}</p>}
                   {source.lastError && <p className="inline-error">{source.lastError}</p>}
                 </article>
               ))}
