@@ -80,6 +80,23 @@ function targetLabel(target: string) {
   return DEADLINE_API_TARGETS.find((item) => item.id === target)?.label || target;
 }
 
+function variableLabel(variableId: DeadlineVariableKey) {
+  return DEADLINE_VARIABLES.find((item) => item.id === variableId)?.label || variableId;
+}
+
+function renderReadablePreview(template: string, variables: VariablesState) {
+  return String(template || '').replace(/\{([a-zA-Z0-9_]+)\}/g, (fullMatch, rawKey) => {
+    const key = rawKey as DeadlineVariableKey;
+    const variableExists = DEADLINE_VARIABLES.some((variable) => variable.id === key);
+    if (!variableExists) return `[variable inconnue ${rawKey}]`;
+
+    const value = String(variables?.[key] || '').trim();
+    if (value) return value;
+
+    return `[${variableLabel(key)} manquante]`;
+  }).trim();
+}
+
 function shortValue(value?: string, maxLength = 180) {
   const text = String(value || '').trim();
   if (text.length <= maxLength) return text;
@@ -160,6 +177,17 @@ export default function PerformPage() {
   const usedVariables = useMemo(() => extractTemplateVariables(template), [template]);
   const selectedCallType = useMemo(() => getCallTypeById(callType), [callType]);
   const readinessKey = validation.ok ? JSON.stringify({ phone: normalizedPhone, message: validation.message, callType, label }) : '';
+  const readablePreview = useMemo(() => renderReadablePreview(template, variables), [template, variables]);
+  const usedVariableRows = useMemo(() => usedVariables.map((variableId) => {
+    const value = String(variables[variableId] || '').trim();
+    return {
+      id: variableId,
+      token: `{${variableId}}`,
+      label: variableLabel(variableId),
+      value,
+      missing: !value,
+    };
+  }), [usedVariables, variables]);
 
   function updateVariable(key: DeadlineVariableKey, value: string) {
     setVariables((current) => ({ ...current, [key]: value }));
@@ -596,20 +624,34 @@ export default function PerformPage() {
             ))}
           </div>
 
-          <div className="script-preview strong-preview">
-            <span>Aperçu</span>
-            <p>{validation.message || 'Le message final apparaîtra ici.'}</p>
+          <div className="message-preview-panel">
+            <div className="preview-headline">
+              <span>Prévisualisation du message final</span>
+              <strong className={validation.ok ? 'preview-ready' : 'preview-locked'}>{validation.ok ? 'Prêt' : 'Verrouillé'}</strong>
+            </div>
+            <p className="final-message-preview">{readablePreview || 'Le message final apparaîtra ici.'}</p>
           </div>
 
-          <div className="credit-box">
-            <span>Variables utilisées</span>
-            <strong>{usedVariables.length ? usedVariables.map((item) => `{${item}}`).join(' ') : 'Aucune'}</strong>
+          <div className="template-checklist">
+            <div className="preview-headline">
+              <span>Champs programmés</span>
+              <strong>{usedVariableRows.length ? `${usedVariableRows.length} champ${usedVariableRows.length > 1 ? 's' : ''}` : 'Aucun champ'}</strong>
+            </div>
+            {usedVariableRows.length ? usedVariableRows.map((row) => (
+              <div className={`template-row ${row.missing ? 'is-missing' : 'is-ready'}`} key={row.id}>
+                <span>{row.token}</span>
+                <strong>{row.missing ? `${row.label} manquante` : row.value}</strong>
+                <em>{row.missing ? 'Manquant' : 'OK'}</em>
+              </div>
+            )) : (
+              <p className="small no-fields">Aucune variable n’est utilisée dans le template. Tu peux écrire un message fixe ou ajouter un champ comme {'{zone1}'}.</p>
+            )}
           </div>
 
           {validation.missing.length > 0 && (
             <div className="missing-box">
               <strong>Appel bloqué</strong>
-              <p>À compléter : {validation.missing.join(', ')}.</p>
+              <p>À compléter avant tout appel : {validation.missing.join(', ')}.</p>
             </div>
           )}
 

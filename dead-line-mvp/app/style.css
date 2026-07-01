@@ -20,6 +20,11 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
 html {
   min-height: 100%;
   background: var(--bg);
@@ -96,6 +101,7 @@ input,
 textarea,
 select {
   width: 100%;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 16px;
   outline: none;
@@ -213,6 +219,7 @@ button:disabled {
 }
 
 .card {
+  min-width: 0;
   border-radius: 28px;
   padding: clamp(18px, 3vw, 28px);
 }
@@ -507,6 +514,17 @@ button:disabled {
   .call-meta span {
     width: 100%;
   }
+
+  .perform-hero h1 {
+    font-size: clamp(2rem, 13vw, 3.1rem);
+    letter-spacing: -0.07em;
+  }
+
+  .message-preview-panel,
+  .template-checklist,
+  .api-card {
+    padding: 13px;
+  }
 }
 
 .stack {
@@ -628,6 +646,7 @@ button:disabled {
 
 .api-note {
   margin: 12px 0 0;
+  overflow-wrap: anywhere;
   border-radius: 14px;
   background: rgba(255,255,255,0.045);
   padding: 10px 12px;
@@ -655,9 +674,118 @@ button:disabled {
 }
 
 .token-button {
+  width: auto;
   padding: 8px 10px;
   border-radius: 999px;
   font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.message-preview-panel,
+.template-checklist {
+  border: 1px solid rgba(217, 180, 106, 0.24);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(217, 180, 106, 0.12), rgba(255, 255, 255, 0.035)),
+    rgba(0, 0, 0, 0.22);
+  padding: 16px;
+}
+
+.preview-headline {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.preview-headline span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.preview-headline strong {
+  color: var(--gold);
+  font-size: 0.86rem;
+}
+
+.preview-ready {
+  color: var(--success) !important;
+}
+
+.preview-locked {
+  color: var(--danger) !important;
+}
+
+.final-message-preview {
+  margin: 14px 0 0;
+  color: #fff6de;
+  font-size: clamp(1.05rem, 2vw, 1.32rem);
+  font-weight: 800;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.template-checklist {
+  display: grid;
+  gap: 10px;
+}
+
+.template-row {
+  display: grid;
+  grid-template-columns: minmax(74px, 0.36fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.18);
+  padding: 10px 12px;
+}
+
+.template-row span {
+  color: var(--gold);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.86rem;
+}
+
+.template-row strong {
+  min-width: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.template-row em {
+  justify-self: end;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 900;
+  padding: 5px 8px;
+  text-transform: uppercase;
+}
+
+.template-row.is-ready em {
+  border-color: rgba(120, 209, 143, 0.32);
+  color: var(--success);
+}
+
+.template-row.is-missing {
+  border-color: rgba(255, 107, 107, 0.34);
+  background: rgba(255, 107, 107, 0.08);
+}
+
+.template-row.is-missing em,
+.template-row.is-missing strong {
+  color: #ffd4d4;
+}
+
+.no-fields {
+  margin: 0;
 }
 
 .strong-preview p {
@@ -753,5 +881,29 @@ button:disabled {
 
   .api-actions {
     flex-direction: column;
+  }
+
+  .perform-preview {
+    order: -1;
+  }
+
+  .preview-headline,
+  .template-row {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-headline {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .template-row em {
+    justify-self: start;
+  }
+
+  .json-path-presets .token-button,
+  .variable-tokens .token-button {
+    width: auto;
+    flex: 0 0 auto;
   }
 }
