@@ -159,6 +159,7 @@ export default function Dashboard() {
           <span className="pulse" />
           <strong>MVP opérationnel</strong>
           <span>Twilio Voice + Firebase RTDB</span>
+          <a className="ghost-button panel-link" href="/perform">Mode performance</a>
         </div>
       </section>
 

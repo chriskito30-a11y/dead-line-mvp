@@ -67,3 +67,29 @@ Structure créée automatiquement :
 
 Sur compte Twilio trial, les numéros appelés doivent souvent être vérifiés dans Twilio avant test. C'est normal.
 
+
+## Mode performance `/perform`
+
+Le mode performance permet de préparer un appel à partir de champs manuels et d'URL API configurables.
+
+Fonctions ajoutées :
+
+- Contact manuel ou rempli par une URL API.
+- URL API illimitées, sauvegardées en localStorage sur l'appareil.
+- Chaque URL API peut remplir : Contact, Prédiction, Zone 1 à Zone 5, Message complet ou Déclenchement.
+- Lecture d'une URL API seule ou lecture de toutes les URL API actives.
+- Réponse API en mode Auto, JSON ou Texte brut.
+- Champ JSON configurable, par défaut `text`.
+- Message final construit avec variables : `{prediction}`, `{zone1}`, `{zone2}`, `{zone3}`, `{zone4}`, `{zone5}`, `{fullMessage}`.
+- Déclenchement manuel ou automatique quand tout est prêt.
+- Délai réglable en secondes avant l'appel.
+- Verrouillage strict : l'appel est bloqué si le contact, le message final ou une variable utilisée manque.
+- Verrouillage anti double appel : une session déjà déclenchée ne relance pas automatiquement.
+
+Exemple de message final :
+
+```txt
+La carte est {zone1}. La couleur est {zone2}.
+```
+
+Si `{zone1}` ou `{zone2}` est vide, l'appel ne part pas.

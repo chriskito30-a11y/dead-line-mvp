@@ -2,21 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebaseAdmin';
 import { requireAdminKey } from '@/lib/security';
 import { twilioClient } from '@/lib/twilio';
-import { getCallTypeById, getPresetById } from '@/lib/deadlineConfig';
-
-function normalizePhone(phone: string) {
-  const cleaned = phone.trim().replace(/\s+/g, '');
-  if (cleaned.startsWith('+')) return cleaned;
-  if (cleaned.startsWith('0')) return '+33' + cleaned.slice(1);
-  return cleaned;
-}
-
-function maskPhone(phone: string) {
-  const clean = String(phone || '').replace(/\s+/g, '');
-  if (!clean) return '—';
-  if (clean.length <= 6) return '••••';
-  return `${clean.slice(0, 3)}••••••${clean.slice(-4)}`;
-}
+import {
+  getCallTypeById,
+  getPresetById,
+  maskPhone,
+  normalizePhone,
+  validatePerformMessage,
+} from '@/lib/deadlineConfig';
 
 function safeText(value: unknown, fallback: string, maxLength: number) {
   const text = String(value || '').trim();
@@ -31,14 +23,36 @@ export async function POST(req: NextRequest) {
     requireAdminKey(req);
 
     const body = await req.json();
-    const phone = normalizePhone(String(body.phone || ''));
     const preset = getPresetById(String(body.presetId || 'custom'));
     const callType = getCallTypeById(String(body.callType || 'revelation'));
     const label = safeText(body.label, preset.defaultLabel, 90);
-    const message = safeText(body.message, preset.defaultMessage, 700);
+    let phone = normalizePhone(String(body.phone || ''));
+    let message = safeText(body.message, preset.defaultMessage, 700);
+
+    const template = typeof body.template === 'string' ? body.template : '';
+    const variables = body.variables && typeof body.variables === 'object' ? body.variables : null;
+
+    if (template && variables) {
+      const validation = validatePerformMessage({ phone, template, variables });
+
+      if (!validation.ok) {
+        return NextResponse.json({
+          ok: false,
+          error: `Appel bloqué : ${validation.missing.join(', ')} manquant${validation.missing.length > 1 ? 's' : ''}.`,
+          missing: validation.missing,
+        }, { status: 400 });
+      }
+
+      phone = validation.phone;
+      message = validation.message.slice(0, 700);
+    }
 
     if (!phone || phone.length < 8 || !phone.startsWith('+')) {
       return NextResponse.json({ ok: false, error: 'Numéro invalide. Utilise un format international, par exemple +33612345678.' }, { status: 400 });
+    }
+
+    if (!message.trim()) {
+      return NextResponse.json({ ok: false, error: 'Appel bloqué : message final manquant.' }, { status: 400 });
     }
 
     callRef = db.ref('calls').push();
@@ -65,6 +79,12 @@ export async function POST(req: NextRequest) {
         balanceBefore: null,
         balanceAfter: null,
       },
+      perform: template ? {
+        mode: 'template',
+        template,
+        variables,
+        usedVariables: validatePerformMessage({ phone, template, variables: variables || {} }).usedVariables,
+      } : null,
       status: 'creating',
       createdAt: Date.now()
     });

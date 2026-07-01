@@ -7,7 +7,10 @@ export default function Home() {
         <p>
           Un outil discret pour envoyer une révélation vocale au bon moment. Pensé pour les magiciens et mentalistes en conditions réelles.
         </p>
-        <a className="primary-link" href="/dashboard">Ouvrir le dashboard</a>
+        <div className="landing-actions">
+          <a className="primary-link" href="/perform">Mode performance</a>
+          <a className="ghost-button landing-ghost" href="/dashboard">Dashboard</a>
+        </div>
       </section>
     </main>
   );
